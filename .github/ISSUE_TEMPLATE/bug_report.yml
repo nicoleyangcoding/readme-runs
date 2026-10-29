@@ -1,0 +1,21 @@
+name: Bug report
+description: A block ran differently than it would in a real terminal.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: The command you ran, the output, and what you expected.
+    validations:
+      required: true
+  - type: textarea
+    id: markdown
+    attributes:
+      label: The smallest Markdown that shows the problem
+      render: markdown
+  - type: input
+    id: version
+    attributes:
+      label: Version and image
+      description: Output of `readme-runs --version`, and the --image you used
