@@ -19,6 +19,7 @@ class Block:
     line: int  # 1-based line of the opening fence
     lang: str
     script: str
+    expect_fail: bool = False
 
     @property
     def summary(self) -> str:
@@ -85,15 +86,23 @@ def parse(markdown: str) -> Document:
         if lang not in SCRIPT_LANGS | SESSION_LANGS:
             last_text = ""
             continue
-        if "skip" in _directives(last_text):
-            doc.skipped.append(start + 1)
-            last_text = ""
-            continue
+        directives = _directives(last_text)
         last_text = ""
+        if "skip" in directives:
+            doc.skipped.append(start + 1)
+            continue
 
         prompt_style = lang in SESSION_LANGS or any(_PROMPT.match(b) for b in body)
         script = _session_commands(body) if prompt_style else "\n".join(body)
         if not script.strip():
             continue
-        doc.blocks.append(Block(len(doc.blocks) + 1, start + 1, lang, script.strip("\n") + "\n"))
+        doc.blocks.append(
+            Block(
+                len(doc.blocks) + 1,
+                start + 1,
+                lang,
+                script.strip("\n") + "\n",
+                expect_fail="expect-fail" in directives,
+            )
+        )
     return doc

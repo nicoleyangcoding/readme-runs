@@ -55,7 +55,8 @@ def build_parser() -> argparse.ArgumentParser:
 
 def _print_list(blocks: list[Block], skipped: list[int], name: str) -> None:
     for block in blocks:
-        print(f"  {block.index:>2}. line {block.line:<5} {block.summary}")
+        note = "  (expected to fail)" if block.expect_fail else ""
+        print(f"  {block.index:>2}. line {block.line:<5} {block.summary}{note}")
     if skipped:
         print(f"  skipped: line {', '.join(map(str, skipped))}")
     print(f"{len(blocks)} block(s) would run from {name}.")
@@ -91,19 +92,27 @@ def main(argv: list[str] | None = None) -> int:
         runner.start()
         for block in doc.blocks:
             outcome = runner.run(block.script, args.timeout)
-            status = "ok" if outcome.code == 0 else "FAIL"
+            if block.expect_fail:
+                passed = outcome.code != 0 and not outcome.timed_out
+            else:
+                passed = outcome.code == 0
+            status = "ok" if passed else "FAIL"
             where = f"{block.index:>2}. line {block.line:<5}"
-            print(f"  {status:<4}  {where} {block.summary}  ({outcome.seconds:.1f}s)")
+            note = ", failed as expected" if passed and block.expect_fail else ""
+            print(f"  {status:<4}  {where} {block.summary}  ({outcome.seconds:.1f}s{note})")
             if args.verbose and outcome.output.strip():
                 print(_tail(outcome.output, 10_000))
-            if outcome.code != 0:
-                reason = (
-                    f"timed out after {args.timeout:g}s" if outcome.timed_out else f"exit code {outcome.code}"
-                )
+            if not passed:
+                if outcome.timed_out:
+                    reason = f"timed out after {args.timeout:g}s"
+                elif outcome.code == 0:
+                    reason = "expected it to fail, but it exited 0"
+                else:
+                    reason = f"exit code {outcome.code}"
                 print(f"\nBlock {block.index} (line {block.line}) failed: {reason}")
                 if outcome.output.strip() and not args.verbose:
                     print(_tail(outcome.output))
-                missing = _missing_command(outcome.output)
+                missing = _missing_command(outcome.output) if outcome.code else None
                 if missing and not args.local:
                     print(
                         f"\nHint: '{missing}' isn't installed in {image}. Use an image that has it "

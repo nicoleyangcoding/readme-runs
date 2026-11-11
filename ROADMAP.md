@@ -3,7 +3,7 @@
 Small, focused releases. Suggestions are welcome in [issues](https://github.com/nicoleyangcoding/readme-runs/issues).
 
 ## 0.2
-- [ ] `<!-- readme-runs: expect-fail -->` for blocks that are supposed to fail
+- [x] `<!-- readme-runs: expect-fail -->` for blocks that are supposed to fail
 - [ ] `--from N` to start at a given block (with earlier blocks still run silently for setup)
 - [ ] Check `console` output lines against real output (opt-in)
 

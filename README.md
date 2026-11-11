@@ -46,9 +46,11 @@ Put HTML comments in your README. They are invisible when rendered.
 <!-- readme-runs: image=node:24 -->       pick the environment once, for the whole file
 
 <!-- readme-runs: skip -->                skip the next code block
+
+<!-- readme-runs: expect-fail -->         the next code block should fail
 ```
 
-Skip blocks that deploy, need secrets, or only make sense on a real machine.
+Skip blocks that deploy, need secrets, or only make sense on a real machine. Use `expect-fail` for blocks that show an error on purpose, like a command run before setup is done. The block passes only if it exits with an error, and the run carries on after it.
 
 ## Options
 

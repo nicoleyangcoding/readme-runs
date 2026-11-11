@@ -2,6 +2,11 @@
 
 All notable changes are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [0.2.0] - 2026-11-11
+
+### Added
+- `<!-- readme-runs: expect-fail -->` for blocks that are supposed to fail
+
 ## [0.1.0] - 2026-10-29
 
 ### Added

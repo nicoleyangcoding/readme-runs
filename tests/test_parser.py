@@ -90,3 +90,13 @@ def test_unclosed_fence_and_empty_blocks():
 def test_summary_truncates():
     block = parse("```bash\n\n" + "x" * 100 + "\n```").blocks[0]
     assert len(block.summary) == 60 and block.summary.endswith("...")
+
+
+def test_expect_fail_directive():
+    doc = parse(
+        "<!-- readme-runs: expect-fail -->\n```bash\nfalse\n```\n\n"
+        "<!-- readme-runs: skip, expect-fail -->\n```bash\nrm -rf /\n```\n\n"
+        "```bash\ntrue\n```\n"
+    )
+    assert [b.expect_fail for b in doc.blocks] == [True, False]
+    assert doc.skipped == [7]

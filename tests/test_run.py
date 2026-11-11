@@ -105,3 +105,26 @@ def test_docker_bad_image(tmp_path, capsys):
     readme = write(tmp_path, "```bash\necho hi\n```\n")
     assert main([str(readme), "--image", "readme-runs/does-not-exist:0"]) == 2
     assert "Couldn't start image" in capsys.readouterr().err
+
+
+def test_expect_fail_passes_when_block_fails(tmp_path, capsys):
+    readme = write(
+        tmp_path,
+        "<!-- readme-runs: expect-fail -->\n```bash\necho before > state.txt\nfalse\n```\n\n"
+        "```bash\ncat state.txt\n```\n",
+    )
+    assert main([str(readme), "--local"]) == 0
+    out = capsys.readouterr().out
+    assert "failed as expected" in out and "All 2 block(s) passed." in out
+
+
+def test_expect_fail_fails_when_block_succeeds(tmp_path, capsys):
+    readme = write(tmp_path, "<!-- readme-runs: expect-fail -->\n```bash\ntrue\n```\n")
+    assert main([str(readme), "--local"]) == 1
+    assert "expected it to fail, but it exited 0" in capsys.readouterr().out
+
+
+def test_expect_fail_still_fails_on_timeout(tmp_path, capsys):
+    readme = write(tmp_path, "<!-- readme-runs: expect-fail -->\n```bash\nsleep 20\n```\n")
+    assert main([str(readme), "--local", "--timeout", "1"]) == 1
+    assert "timed out after 1s" in capsys.readouterr().out
