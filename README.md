@@ -59,7 +59,6 @@ Skip blocks that deploy, need secrets, or only make sense on a real machine. Use
 | `readme-runs [FILE]` | Check `FILE` (default `README.md`). |
 | `--image IMAGE` | Docker image to start from. Default `ubuntu:24.04`, or the README's `image=` comment. |
 | `--list` | Show which blocks would run, without running anything. |
-| `--from N` | Start reporting at block `N` (numbers as in `--list`). Earlier blocks still run first, quietly, so the setup they do is in place. |
 | `-v`, `--verbose` | Print each block's output, not just the failing one. |
 | `--timeout SEC` | Time limit per block (default 300). |
 | `--no-network` | Run without network access. |

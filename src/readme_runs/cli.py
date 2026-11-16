@@ -34,7 +34,6 @@ def build_parser() -> argparse.ArgumentParser:
             "Examples:\n"
             "  readme-runs\n"
             "  readme-runs docs/INSTALL.md --image python:3.12\n"
-            "  readme-runs --from 4\n"
             "  readme-runs --list"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -47,14 +46,6 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--no-network", action="store_true", help="run the container without network access")
     parser.add_argument(
         "--timeout", type=float, default=300, metavar="SEC", help="per-block limit (default: 300)"
-    )
-    parser.add_argument(
-        "--from",
-        dest="start",
-        type=int,
-        default=1,
-        metavar="N",
-        help="report from block N on; earlier blocks still run, quietly, for setup",
     )
     parser.add_argument("--list", action="store_true", help="show the blocks that would run, then exit")
     parser.add_argument("-v", "--verbose", action="store_true", help="print every block's output")
@@ -86,13 +77,6 @@ def main(argv: list[str] | None = None) -> int:
     if not doc.blocks:
         print(f"No bash, sh or console code blocks found in {path}.")
         return 0
-    if not 1 <= args.start <= len(doc.blocks):
-        print(
-            f"readme-runs: --from {args.start} is out of range; {path.name} has blocks 1-{len(doc.blocks)}",
-            file=sys.stderr,
-        )
-        return 2
-    checked = len(doc.blocks) - args.start + 1
 
     image = args.image or doc.image or DEFAULT_IMAGE
     source = path.resolve().parent
@@ -102,30 +86,23 @@ def main(argv: list[str] | None = None) -> int:
     else:
         runner = DockerRunner(source, image, network=not args.no_network)
         where = f"in {image}"
-    if args.start > 1:
-        print(f"Running {checked} block(s) from {path.name} {where}, after {args.start - 1} setup block(s)\n")
-    else:
-        print(f"Running {len(doc.blocks)} block(s) from {path.name} {where}\n")
+    print(f"Running {len(doc.blocks)} block(s) from {path.name} {where}\n")
 
     try:
         runner.start()
         for block in doc.blocks:
-            setup = block.index < args.start
             outcome = runner.run(block.script, args.timeout)
             if block.expect_fail:
                 passed = outcome.code != 0 and not outcome.timed_out
             else:
                 passed = outcome.code == 0
-            if not setup or not passed:
-                status = "ok" if passed else "FAIL"
-                where = f"{block.index:>2}. line {block.line:<5}"
-                note = ", failed as expected" if passed and block.expect_fail else ""
-                print(f"  {status:<4}  {where} {block.summary}  ({outcome.seconds:.1f}s{note})")
-            if args.verbose and outcome.output.strip() and not setup:
+            status = "ok" if passed else "FAIL"
+            where = f"{block.index:>2}. line {block.line:<5}"
+            note = ", failed as expected" if passed and block.expect_fail else ""
+            print(f"  {status:<4}  {where} {block.summary}  ({outcome.seconds:.1f}s{note})")
+            if args.verbose and outcome.output.strip():
                 print(_tail(outcome.output, 10_000))
             if not passed:
-                if setup:
-                    print(f"\nSetup block {block.index} ran before --from {args.start} and failed.")
                 if outcome.timed_out:
                     reason = f"timed out after {args.timeout:g}s"
                 elif outcome.code == 0:
@@ -152,7 +129,7 @@ def main(argv: list[str] | None = None) -> int:
     finally:
         runner.stop()
 
-    print(f"\nAll {checked} block(s) passed.")
+    print(f"\nAll {len(doc.blocks)} block(s) passed.")
     return 0
 
 

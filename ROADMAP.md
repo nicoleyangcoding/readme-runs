@@ -4,7 +4,7 @@ Small, focused releases. Suggestions are welcome in [issues](https://github.com/
 
 ## 0.2
 - [x] `<!-- readme-runs: expect-fail -->` for blocks that are supposed to fail
-- [x] `--from N` to start at a given block (with earlier blocks still run silently for setup)
+- [ ] `--from N` to start at a given block (with earlier blocks still run silently for setup)
 - [ ] Check `console` output lines against real output (opt-in)
 
 ## 0.3
