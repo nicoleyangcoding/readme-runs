@@ -128,3 +128,30 @@ def test_expect_fail_still_fails_on_timeout(tmp_path, capsys):
     readme = write(tmp_path, "<!-- readme-runs: expect-fail -->\n```bash\nsleep 20\n```\n")
     assert main([str(readme), "--local", "--timeout", "1"]) == 1
     assert "timed out after 1s" in capsys.readouterr().out
+
+
+THREE = "```bash\necho one > one.txt\n```\n\n```bash\ncat one.txt\n```\n\n```bash\necho three\n```\n"
+
+
+def test_from_runs_earlier_blocks_quietly(tmp_path, capsys):
+    readme = write(tmp_path, THREE)
+    assert main([str(readme), "--local", "--from", "2"]) == 0
+    out = capsys.readouterr().out
+    assert "after 1 setup block(s)" in out
+    assert " 1. line" not in out and " 2. line" in out and " 3. line" in out
+    assert "All 2 block(s) passed." in out
+
+
+def test_from_reports_failing_setup_block(tmp_path, capsys):
+    readme = write(tmp_path, "```bash\nfalse\n```\n\n```bash\necho two\n```\n")
+    assert main([str(readme), "--local", "--from", "2"]) == 1
+    out = capsys.readouterr().out
+    assert "Setup block 1 ran before --from 2 and failed." in out
+    assert "Block 1 (line 1) failed: exit code 1" in out
+
+
+def test_from_out_of_range(tmp_path, capsys):
+    readme = write(tmp_path, THREE)
+    assert main([str(readme), "--local", "--from", "4"]) == 2
+    assert "has blocks 1-3" in capsys.readouterr().err
+    assert main([str(readme), "--local", "--from", "0"]) == 2

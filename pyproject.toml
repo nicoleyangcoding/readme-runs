@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "readme-runs"
-version = "0.2.0"
+version = "0.3.0"
 description = "Run the shell commands in your README inside a clean container, to prove the setup steps still work."
 readme = "README.md"
 license = "MIT"
