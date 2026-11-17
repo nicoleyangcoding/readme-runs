@@ -11,6 +11,7 @@ SESSION_LANGS = {"console", "shell-session", "shellsession", "terminal"}
 _FENCE = re.compile(r"^( {0,3})(`{3,}|~{3,})\s*([^`\s]*)[^`]*$")
 _DIRECTIVE = re.compile(r"<!--\s*readme-runs:\s*(.*?)\s*-->", re.IGNORECASE)
 _PROMPT = re.compile(r"^\s*\$ ")
+_ENV = re.compile(r"env\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)", re.IGNORECASE)
 
 
 @dataclass(frozen=True)
@@ -32,10 +33,17 @@ class Document:
     blocks: list[Block] = field(default_factory=list)
     skipped: list[int] = field(default_factory=list)  # fence line numbers
     image: str | None = None
+    env: dict[str, str] = field(default_factory=dict)
 
 
 def _directives(text: str) -> list[str]:
     return [d.strip().lower() for m in _DIRECTIVE.finditer(text) for d in m.group(1).split(",")]
+
+
+def _unquote(value: str) -> str:
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+        return value[1:-1]
+    return value
 
 
 def _session_commands(body: list[str]) -> str:
@@ -56,6 +64,11 @@ def _session_commands(body: list[str]) -> str:
 def parse(markdown: str) -> Document:
     doc = Document()
     for match in _DIRECTIVE.finditer(markdown):
+        env = _ENV.fullmatch(match.group(1))
+        if env:
+            # The whole value is kept, commas included, so this one isn't split like the others.
+            doc.env[env.group(1)] = _unquote(env.group(2))
+            continue
         for part in match.group(1).split(","):
             key, _, value = part.strip().partition("=")
             if key.strip().lower() == "image" and value.strip():

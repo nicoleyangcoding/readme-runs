@@ -128,3 +128,32 @@ def test_expect_fail_still_fails_on_timeout(tmp_path, capsys):
     readme = write(tmp_path, "<!-- readme-runs: expect-fail -->\n```bash\nsleep 20\n```\n")
     assert main([str(readme), "--local", "--timeout", "1"]) == 1
     assert "timed out after 1s" in capsys.readouterr().out
+
+
+ENV_README = """<!-- readme-runs: env GREETING="hello, world" -->
+<!-- readme-runs: env CI=false -->
+
+```bash
+test "$GREETING" = "hello, world"
+test "$CI" = false
+test -n "$RR_STATE"
+```
+"""
+
+
+def test_env_directive_local(tmp_path, capsys):
+    readme = write(tmp_path, ENV_README)
+    assert main([str(readme), "--local"]) == 0
+    assert main([str(readme), "--list"]) == 0
+    assert "env: GREETING, CI" in capsys.readouterr().out
+
+
+def test_env_directive_cannot_replace_internal_variables(tmp_path):
+    readme = write(tmp_path, "<!-- readme-runs: env RR_WORK=/nowhere -->\n```bash\ntest -f data.txt\n```\n")
+    assert main([str(readme), "--local"]) == 0
+
+
+@needs_docker
+def test_docker_env_directive(tmp_path):
+    readme = write(tmp_path, ENV_README)
+    assert main([str(readme), "--image", "alpine:3.20"]) == 0

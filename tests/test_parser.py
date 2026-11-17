@@ -100,3 +100,21 @@ def test_expect_fail_directive():
     )
     assert [b.expect_fail for b in doc.blocks] == [True, False]
     assert doc.skipped == [7]
+
+
+def test_env_directive():
+    doc = parse(
+        "<!-- readme-runs: env API_URL=http://localhost:8000 -->\n"
+        '<!-- readme-runs: env GREETING="hello, world" -->\n'
+        "<!-- README-RUNS: ENV debug = 1 -->\n"
+        "<!-- readme-runs: env 1BAD=x -->\n"
+        "<!-- readme-runs: image=node:24 -->\n"
+    )
+    assert doc.env == {"API_URL": "http://localhost:8000", "GREETING": "hello, world", "debug": "1"}
+    assert doc.image == "node:24"
+
+
+def test_env_directive_does_not_change_the_next_block():
+    doc = parse("<!-- readme-runs: env SKIP=1 -->\n```bash\necho hi\n```\n")
+    assert [b.script for b in doc.blocks] == ["echo hi\n"]
+    assert doc.env == {"SKIP": "1"}

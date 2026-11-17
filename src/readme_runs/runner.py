@@ -22,6 +22,7 @@ DEFAULT_IMAGE = "ubuntu:24.04"
 # Local environments built on the host would be wrong (or huge) inside a fresh environment.
 SKIP_DIRS = {".venv", "venv", "node_modules", "__pycache__", ".tox", ".mypy_cache", ".pytest_cache"}
 _SKIP_COPY = shutil.ignore_patterns(*SKIP_DIRS)
+_RESERVED_ENV = {"RR_STATE", "RR_WORK"}
 
 WRAPPER = r"""
 state="$RR_STATE"
@@ -39,6 +40,11 @@ if [ -n "$BASH_VERSION" ]; then set -o pipefail; fi
 """
 
 
+def block_env(env: dict[str, str] | None) -> dict[str, str]:
+    """Variables every block starts with: CI=true, then the README's own env= comments."""
+    return {"CI": "true", **{k: v for k, v in (env or {}).items() if k not in _RESERVED_ENV}}
+
+
 class RunnerError(Exception):
     pass
 
@@ -52,8 +58,15 @@ class Outcome:
 
 
 class DockerRunner:
-    def __init__(self, source: Path, image: str = DEFAULT_IMAGE, network: bool = True):
+    def __init__(
+        self,
+        source: Path,
+        image: str = DEFAULT_IMAGE,
+        network: bool = True,
+        env: dict[str, str] | None = None,
+    ):
         self.source, self.image, self.network = source, image, network
+        self.env = block_env(env)
         self.name = f"readme-runs-{uuid.uuid4().hex[:10]}"
         self.shell = "sh"
 
@@ -73,7 +86,9 @@ class DockerRunner:
         if self._docker("version", "--format", "{{.Server.Version}}").returncode != 0:
             raise RunnerError("Docker is installed but not running. Start Docker, or use --local.")
         args = ["run", "-d", "--rm", "--name", self.name]
-        args += ["-e", "RR_STATE=/tmp/readme-runs", "-e", "RR_WORK=/work", "-e", "CI=true"]
+        args += ["-e", "RR_STATE=/tmp/readme-runs", "-e", "RR_WORK=/work"]
+        for name, value in self.env.items():
+            args += ["-e", f"{name}={value}"]
         if not self.network:
             args += ["--network", "none"]
         result = self._docker(*args, "--entrypoint", "sleep", self.image, "infinity", timeout=600)
@@ -131,8 +146,9 @@ class DockerRunner:
 class LocalRunner:
     """Runs on this machine in a temporary copy of the project. Not isolated."""
 
-    def __init__(self, source: Path):
+    def __init__(self, source: Path, env: dict[str, str] | None = None):
         self.source = source
+        self.env = block_env(env)
         self.temp = Path(tempfile.mkdtemp(prefix="readme-runs-"))
         self.work = self.temp / "work"
         self.state = self.temp / "state"
@@ -145,7 +161,7 @@ class LocalRunner:
 
     def run(self, script: str, timeout: float) -> Outcome:
         (self.state / "block.sh").write_text(script, encoding="utf-8")
-        env = {**os.environ, "RR_STATE": str(self.state), "RR_WORK": str(self.work), "CI": "true"}
+        env = {**os.environ, **self.env, "RR_STATE": str(self.state), "RR_WORK": str(self.work)}
         began = time.monotonic()
         proc = subprocess.Popen(
             [self.shell, str(self.state / "wrapper.sh")],

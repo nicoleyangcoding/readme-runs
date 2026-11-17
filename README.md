@@ -48,9 +48,13 @@ Put HTML comments in your README. They are invisible when rendered.
 <!-- readme-runs: skip -->                skip the next code block
 
 <!-- readme-runs: expect-fail -->         the next code block should fail
+
+<!-- readme-runs: env API_URL=http://localhost:8000 -->   set a variable for every block
 ```
 
 Skip blocks that deploy, need secrets, or only make sense on a real machine. Use `expect-fail` for blocks that show an error on purpose, like a command run before setup is done. The block passes only if it exits with an error, and the run carries on after it.
+
+Use `env` for values a newcomer would have in their shell but the README doesn't set, like a fake API key for a demo. Add one comment per variable. The value is used as written, commas included, and one pair of surrounding quotes is removed. Don't put real secrets in a README.
 
 ## Options
 

@@ -8,7 +8,7 @@ Small, focused releases. Suggestions are welcome in [issues](https://github.com/
 - [ ] Check `console` output lines against real output (opt-in)
 
 ## 0.3
-- [ ] `<!-- readme-runs: env NAME=value -->` to set variables without changing the README
+- [x] `<!-- readme-runs: env NAME=value -->` to set variables without changing the README
 - [ ] Run several Markdown files in one go (`readme-runs docs/*.md`)
 - [ ] JUnit XML report for CI dashboards
 

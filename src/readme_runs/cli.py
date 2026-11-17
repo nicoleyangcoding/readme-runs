@@ -53,7 +53,9 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _print_list(blocks: list[Block], skipped: list[int], name: str) -> None:
+def _print_list(blocks: list[Block], skipped: list[int], env: dict[str, str], name: str) -> None:
+    if env:
+        print(f"  env: {', '.join(env)}")
     for block in blocks:
         note = "  (expected to fail)" if block.expect_fail else ""
         print(f"  {block.index:>2}. line {block.line:<5} {block.summary}{note}")
@@ -72,7 +74,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     if args.list:
-        _print_list(doc.blocks, doc.skipped, path.name)
+        _print_list(doc.blocks, doc.skipped, doc.env, path.name)
         return 0
     if not doc.blocks:
         print(f"No bash, sh or console code blocks found in {path}.")
@@ -81,10 +83,10 @@ def main(argv: list[str] | None = None) -> int:
     image = args.image or doc.image or DEFAULT_IMAGE
     source = path.resolve().parent
     if args.local:
-        runner = LocalRunner(source)
+        runner = LocalRunner(source, doc.env)
         where = "locally (not isolated)"
     else:
-        runner = DockerRunner(source, image, network=not args.no_network)
+        runner = DockerRunner(source, image, network=not args.no_network, env=doc.env)
         where = f"in {image}"
     print(f"Running {len(doc.blocks)} block(s) from {path.name} {where}\n")
 
