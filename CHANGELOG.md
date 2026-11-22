@@ -2,10 +2,11 @@
 
 All notable changes are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
-## [0.3.0] - 2026-11-17
+## [0.3.0] - 2026-11-22
 
 ### Added
 - `<!-- readme-runs: env NAME=value -->` to set a variable for every block
+- `--from N` to start at a given block, with earlier blocks still run quietly for setup
 
 ## [0.2.0] - 2026-11-11
 
